@@ -2,17 +2,19 @@ Results go in this folder.
 
 Search for interesting results using "pdfgrep '%' *pdf"
 
-## F 
+
+
+## F  *
 
 (star wildcard needs to be escaped)
 
     pdfgrep '\*' *.pdf
 
-## G
+## G  @
 
 	pdfgrep '@' *.pdf
 
-## L
+## L  %
 
     pdfgrep '%' *.pdf
 	
