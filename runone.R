@@ -1,19 +1,21 @@
-## This script allows us to run one field 
+
 source('chick_pipp.R')
 
 nreps = 99
 
-type = "Blue"; field = "DN6"
+##type = "Blue"; field = "DN7"
+type = "Red"; field = "DN1"
 
-
-
-## Nothing to edit below here...
 
 stopifnot(is.element(field, fields))
 stopifnot(is.element(type, types))
 
 
-expt.col = "blue"
+expt.col = tolower(type)
+if (expt.col == "double")
+  expt.col = "brown"
+
+
 
 deltas = seq(from=5, to=10, by=1)
 sigma = seq(from=1, to=10, by=2)
