@@ -7,10 +7,12 @@ library(sjedrp)
 library(parallel)
 
 
+## maxattempts(2) #new function in sjedmin package
 
 read_pts = function(fieldname="DN1", type="Blue") {
   datafile = file.path("data", "journal.pone.0008992.s004.XLS")
-  dat = read_excel(datafile, sheet=fieldname)
+  ## do not need to see excel messages about missing column names 
+  suppressMessages(dat <- read_excel(datafile, sheet=fieldname))
   names = dat[1,]
   matching_column = which(names(dat) == type)
   realx = truncate(dat[-c(1),matching_column])
@@ -18,19 +20,42 @@ read_pts = function(fieldname="DN1", type="Blue") {
   pts = cbind(realx, realy)
 }
 
+find_bb = function(pts) {
+  x_range = range(pts[,1])
+  y_range = range(pts[,2])
+  c( floor(x_range[1]), ceiling(x_range[2]),
+    floor(y_range[1]), ceiling(y_range[2]))
+}
 
-try_field <- function(prefix, delta, sigma, kappa) {
+try_field <- function(field, type, delta, sigma, kappa) {
+
+
+  prefix = sprintf("%s_%s", field, type)
+
+  ## apply(par$pts.1, 2, range)
+  par <- list()
+  par$pts.1 <- read_pts(field, type)
+  par$w <- find_bb(par$pts.1)
 
   theta = c(delta, sigma, kappa)
   x.lut <- seq(from=1, to=50, by=0.5)
   y.lut <- hpar(x.lut, theta)
   par$x.lut <- x.lut
   par$y.lut <- y.lut
+
+  par$upar <- list(steps=seq(from=0, to=30, by=0.5),
+                   distribs=list(l1=1, f1=1, g1=1,ri=1))
+  par$nreps <- nreps
+
+
+
   
   filename = sprintf('%s_%.2f_%.2f_%.2f.pdf', prefix, delta, sigma, kappa)
 
   sim = make.univsim("chick 1", par)
-  pdf(filename, width=11, height=8)
+
+  full_name = file.path("res", filename) # output goes in res/ folder.
+  pdf(full_name, width=11, height=8)
   par(mfcol=c(2,3), oma=c(0,0,1,0))
 
   ## Plot dataset and LUT in column one.
@@ -43,12 +68,32 @@ try_field <- function(prefix, delta, sigma, kappa) {
     plot.spat.array(all.plots$l1)
     plot.spat.array(all.plots$f1)
     plot.spat.ri(all.plots$ri)
-    msg <- "P-values"
+    labels = ""
+    p_f = ranking(all.plots$f1)
+    p_g = ranking(all.plots$g1)
+    p_l = ranking(all.plots$l1)
+    threshold <- 0.95
+    if (p_f <= threshold)
+      labels <- paste0(labels, "*")
+    if (p_g <= threshold)
+      labels <- paste0(labels, "@")
+    if (p_l <= threshold)
+      labels <- paste0(labels, "%")
+
+    msg <- sprintf("%.2f %.2f %.2f %s", p_f, p_g, p_l, labels)
   } else {
     msg <- "NO CONVERGENCE"
+    p_f = p_g = p_l = NA
   }
   mtext(outer=TRUE, side=3, paste(filename, msg))
   dev.off()
+
+  ## return a list of the results.
+
+  res = list(field=field, type=type, filename=full_name,
+             p_f = p_f, p_g = p_g, p_l = p_l)
+
+  res
 }
 
 
@@ -143,7 +188,7 @@ make.univsim <- function(field, allpar) {
     rej <- matrix(NA, nrow=nreps, ncol=2)
     okay <- TRUE; t1.sim <- NA
     for (i in 1:nreps) {
-      print(i)
+      ##print(i)
       sim <- pipp.lookup(w=w, n=n1, pts=NULL, h=y.lut, d=x.lut,
                          nsweeps=10, verbose=FALSE)
       
@@ -187,56 +232,17 @@ truncate = function(d) {
   as.numeric(v[ok])
 }
 
+run.one = function(i) { try_field(field, type, grid[i,1], grid[i,2], grid[i,3]) }
+
+
+
+fields = c("DN1", "DN2", "DN3", "DN4", "DN5", "DN6", "DN7",
+           "DT1", "DT2", "DT3", "DT4", "DT5", "DT6", "DT7",
+           "VN1", "VN2", "VN3", "VN4", "VN5", "VN6", "VN7",
+           "VT1", "VT2", "VT3", "VT4", "VT5", "VT6", "VT7")
+
+types = c("Red", "Green",  "Blue", "Violet", "Double") # upper in spreadsheet
 
 ######################################################################
 ## End of functions
 ######################################################################
-
-
-nreps = 99
-
-type = "blue"
-field = "DN1"
-
-## full field list.
-## [1] "Summary"       "DN1"           "DN2"           "DN3"          
-##  [5] "DN4"           "DN5"           "DN6"           "DN7"          
-##  [9] "DT1"           "DT2"           "DT3"           "DT4"          
-## [13] "DT5"           "DT6"           "DT7"           "VN1"          
-## [17] "VN2"           "VN3"           "VN4"           "VN5"          
-## [21] "VN6"           "VN7"           "VT1"           "VT2"          
-## [25] "VT3"           "VT4"           "VT5"           "VT6"          
-## [29] "VT7"           "E18"           "P0"            "P6"           
-## [33] "P. pubescens"  "P. domesticus" "C. livia"     
-
-
-types = c("Red", "Green",  "Blue", "Violet", "Double")
-expt.col = "blue"
-prefix = sprintf("%s_%s", field, type)
-
-
-## apply(par$pts.1, 2, range)
-par <- list()
-par$pts.1 <- read_pts()
-par$w <- c(0, 430, 0, 325)
-par$upar <- list(steps=seq(from=0, to=30, by=0.5),
-                 distribs=list(l1=1, f1=1, g1=1,ri=1))
-par$nreps <- nreps
-
-## try_field(prefix, 8, 3, 1)
-## try_field(prefix, 20, 3, 1)
-
-
-deltas = seq(from=5, to=10, by=2.5)
-sigma = seq(from=1, to=10, by=2)
-kappa = seq(from=1, to=6, by=3)
-
-grid = as.matrix(expand.grid(deltas, sigma, kappa))
-
-ngrid = nrow(grid)
-run.one = function(i) { try_field(prefix, grid[i,1], grid[i,2], grid[i,3]) }
-
-options(mc.cores=2)
-getOption("mc.cores",1)
-mclapply(1:ngrid, run.one)
-
