@@ -1,10 +1,13 @@
-
+## This script allows us to run one field 
 source('chick_pipp.R')
 
 nreps = 99
 
-type = "Blue"; field = "DN1"
+type = "Blue"; field = "DN6"
 
+
+
+## Nothing to edit below here...
 
 stopifnot(is.element(field, fields))
 stopifnot(is.element(type, types))
@@ -22,17 +25,12 @@ ngrid = nrow(grid)
 
 
 
-options(mc.cores=60)
+options(mc.cores=30)
 results = mclapply(1:ngrid, run.one)
 
 results_df = do.call(rbind, results)
 
 write.csv(results_df, file.path("res", sprintf("%s_%s.csv", field, type)))
 
-p = read_pts("DN1", "Red")
-
-
-res = try_field("DN2", "Blue", 5, 1, 1)
-res = try_field("DN2", "Blue", 10, 7, 4)
 
 
