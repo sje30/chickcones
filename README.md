@@ -14,12 +14,10 @@ Start R and then install the following:
 
 	R
 	install.packages(c("readxl", "devtools"))
-	devtools::install_github("sjedrp")
-    devtools::install_github("sjevor")
-    devtools::install_github("sjedist")
-    devtools::install_github("sjedmin")
-    devtools::install_github("sjedrp")
-
+	devtools::install_github("sje30/sjedrp")
+    devtools::install_github("sje30/sjevor")
+    devtools::install_github("sje30/sjedist")
+    devtools::install_github("sje30/sjedmin")
 
 ### Run the code
 
