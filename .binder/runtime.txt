@@ -1,0 +1,7 @@
+r-3.6-2019-04-12
+
+
+install.packages("readxl")
+install.packages("devtools")
+
+devtools::install_github("sje30/sjedrp")
